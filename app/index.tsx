@@ -1,11 +1,22 @@
 
 import { ImageBackground } from "expo-image";
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 export default function Index() {
   const router = useRouter();
+  const [userType, setUserType] = useState<'teacher' | 'parent'>('teacher');
+
+  const handleLogin = () => {
+    if (userType === 'teacher') {
+      router.push('/teacher');
+    } else {
+      router.push('/parent');
+    }
+  };
 
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.backgroundImage}>
@@ -24,12 +35,37 @@ export default function Index() {
           </Svg>
         </View>
         <View style={styles.main}>
+          <View style={styles.userTypeContainer}>
+            <TouchableOpacity 
+              style={[styles.userTypeButton, userType === 'teacher' && styles.activeUserType]} 
+              onPress={() => setUserType('teacher')}
+            >
+              <Text style={[styles.userTypeText, userType === 'teacher' && styles.activeUserTypeText]}>
+                Professor
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.userTypeButton, userType === 'parent' && styles.activeUserType]} 
+              onPress={() => setUserType('parent')}
+            >
+              <Text style={[styles.userTypeText, userType === 'parent' && styles.activeUserTypeText]}>
+                Responsável
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.inputContainer}>
             <TextInput style={styles.input} placeholder="Login" />
-            <TextInput style={styles.input} placeholder="Senha" />
+            <TextInput style={styles.input} placeholder="Senha" secureTextEntry />
           </View>
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/teacher')}>
-            <Text style={styles.buttonText}>ENTRAR</Text>
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            <LinearGradient
+              colors={['#4FA8FF', '#2684FE', '#1E6BDB']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonGradient}
+            >
+              <Text style={styles.buttonText}>ENTRAR</Text>
+            </LinearGradient>
           </TouchableOpacity>
           <Text style={styles.textPassword}> Esqueceu a senha ?</Text>
         </View>
@@ -50,7 +86,7 @@ const styles = StyleSheet.create({
   },
   header: {
     height: '30%',
-    backgroundImage: 'linear-gradient(160deg, #2684FE, #00c6ff)',
+    backgroundColor: '#2684FE',
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
@@ -71,8 +107,33 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 30,
+    gap: 20,
     height: '70%',
+  },
+  userTypeContainer: {
+    flexDirection: 'row',
+    width: '80%',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 25,
+    padding: 4,
+    marginBottom: 10,
+  },
+  userTypeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  activeUserType: {
+    backgroundColor: '#2684FE',
+  },
+  userTypeText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600',
+  },
+  activeUserTypeText: {
+    color: '#FFF',
   },
   inputContainer: {
     width: '100%',
@@ -96,22 +157,32 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '80%',
-    backgroundColor: '#2684FE',
     height: 50,
     borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  buttonGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonText: {
     color: '#FFF',
     fontSize: 18,
     textAlign: 'center',
-    lineHeight: 50,
     fontWeight: 'bold',
     letterSpacing: 5,
   },
   textPassword: {
     color: '#2684FE',
     fontSize: 18,
-    fontWeight: "light",
+    fontWeight: "300",
   }
 })
 
