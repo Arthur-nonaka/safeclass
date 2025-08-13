@@ -180,7 +180,6 @@ const UsuarioAdmin = () => {
             onChange={handleInputChange}
             required
           >
-            <option value="aluno">Aluno</option>
             <option value="professor">Professor</option>
             <option value="responsavel">Responsável</option>
           </select>
