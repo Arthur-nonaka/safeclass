@@ -1,54 +1,88 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
 import ChildCard from "../../components/ChildCard";
+import apiService from "../../services/api";
+import { Aluno, Historico, Remedio, Usuario } from "../../types/api";
 
 export default function ParentIndex() {
     const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'situations'>('students');
     const [showProfileModal, setShowProfileModal] = useState(false);
+    const [userProfile, setUserProfile] = useState<Usuario | null>(null);
+    const [filhos, setFilhos] = useState<Aluno[]>([]);
+    const [remedios, setRemedios] = useState<Remedio[]>([]);
+    const [historico, setHistorico] = useState<Historico[]>([]);
+    const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const childrenData = [
-        { 
-            childName: "Gustavo - Escola Etec",
-            schoolInfo: "Turma: 3 DS-AMS",
-            details: ""
-        },
-        { 
-            childName: "Pedro - Etec Prof. Dr Antônio...",
-            schoolInfo: "Turma: 3 DS-AMS",
-            details: ""
-        },
-    ];
+    useEffect(() => {
+        loadUserProfile();
+    }, []);
 
-    const medicineData = [
-        { 
-            childName: "Gustavo - Escola Etec",
-            schoolInfo: "Tomar Rosuvastatina 1/4 de pílula",
-            details: ""
-        },
-        { 
-            childName: "Pedro - Etec Prof. Dr Antônio...",
-            schoolInfo: "Tomar 15 gts Diploma as 14h",
-            details: ""
-        },
-    ];
+    const loadUserProfile = async () => {
+        try {
+            const response = await apiService.getUserProfile();
+            setUserProfile(response.data);
+            if (response.data.id) {
+                loadFilhos(response.data.id);
+            }
+        } catch (error) {
+            console.error('Error loading user profile:', error);
+        }
+    };
 
-    const crisisData = [
-        { 
-            childName: "Gustavo - Escola Etec",
-            schoolInfo: "Surto de Ansiedade",
-            details: ""
-        },
-        { 
-            childName: "Pedro - Etec Prof. Dr Antônio...",
-            schoolInfo: "Crise de Asma",
-            details: ""
-        },
-    ];
+    const loadFilhos = async (responsavelId: number) => {
+        try {
+            setLoading(true);
+            const response = await apiService.getFilhos(responsavelId);
+            setFilhos(response.data);
+            
+            // Load all remedios and historico for all children
+            if (response.data.length > 0) {
+                loadAllRemedios(response.data);
+                loadAllHistorico(response.data);
+            }
+        } catch (error) {
+            console.error('Error loading filhos:', error);
+            Alert.alert('Erro', 'Erro ao carregar filhos');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const handleLogout = () => {
+    const loadAllRemedios = async (children: Aluno[]) => {
+        try {
+            const allRemedios: Remedio[] = [];
+            for (const child of children) {
+                const response = await apiService.getRemediosByAluno(child.id);
+                allRemedios.push(...response.data);
+            }
+            setRemedios(allRemedios);
+        } catch (error) {
+            console.error('Error loading remedios:', error);
+        }
+    };
+
+    const loadAllHistorico = async (children: Aluno[]) => {
+        try {
+            const allHistorico: Historico[] = [];
+            for (const child of children) {
+                const response = await apiService.getHistoricoByUsuario(child.id);
+                allHistorico.push(...response.data);
+            }
+            // Filter only crisis events
+            const crises = allHistorico.filter(h => 
+                h.descricao.toLowerCase().includes('crise') || 
+                h.descricao.toLowerCase().includes('surto')
+            );
+            setHistorico(crises);
+        } catch (error) {
+            console.error('Error loading historico:', error);
+        }
+    };
+
+    const handleLogout = async () => {
         Alert.alert(
             "Sair",
             "Tem certeza que deseja sair?",
@@ -60,7 +94,8 @@ export default function ParentIndex() {
                 {
                     text: "Sair",
                     style: "destructive",
-                    onPress: () => {
+                    onPress: async () => {
+                        await apiService.logout();
                         setShowProfileModal(false);
                         router.replace('/');
                     }
@@ -69,18 +104,27 @@ export default function ParentIndex() {
         );
     };
 
+    const getChildName = (alunoId: number): string => {
+        const child = filhos.find(f => f.id === alunoId);
+        return child ? child.nome_completo : 'Filho';
+    };
+
     const renderContent = () => {
+        if (loading) {
+            return <Text style={styles.loadingText}>Carregando...</Text>;
+        }
+
         switch (activeTab) {
             case 'students':
                 return (
                     <>
                         <Text style={styles.text}>Filhos</Text>
-                        {childrenData.map((child, index) => (
+                        {filhos.map((child) => (
                             <ChildCard
-                                key={index}
-                                childName={child.childName}
-                                schoolInfo={child.schoolInfo}
-                                details={child.details}
+                                key={child.id}
+                                childName={`${child.nome_completo} - Escola Etec`}
+                                schoolInfo={child.sala ? `Turma: ${child.sala.nome}` : 'Sem turma'}
+                                details=""
                                 onPress={() => setActiveTab('situations')}
                             />
                         ))}
@@ -90,12 +134,12 @@ export default function ParentIndex() {
                 return (
                     <>
                         <Text style={styles.text}>Remédios dos Filhos</Text>
-                        {medicineData.map((medicine, index) => (
+                        {remedios.map((remedio) => (
                             <ChildCard
-                                key={index}
-                                childName={medicine.childName}
-                                schoolInfo={medicine.schoolInfo}
-                                details={medicine.details}
+                                key={remedio.id}
+                                childName={`${getChildName(remedio.aluno_id)} - Escola Etec`}
+                                schoolInfo={`${remedio.nome} - ${remedio.dosagem}`}
+                                details={remedio.horario || ''}
                                 onPress={() => setActiveTab('classes')}
                             />
                         ))}
@@ -105,12 +149,12 @@ export default function ParentIndex() {
                 return (
                     <>
                         <Text style={styles.text}>Crises dos Filhos</Text>
-                        {crisisData.map((crisis, index) => (
+                        {historico.map((crise) => (
                             <ChildCard
-                                key={index}
-                                childName={crisis.childName}
-                                schoolInfo={crisis.schoolInfo}
-                                details={crisis.details}
+                                key={crise.id}
+                                childName={`${getChildName(crise.usuario_id)} - Escola Etec`}
+                                schoolInfo={crise.descricao}
+                                details={new Date(crise.criado_em).toLocaleDateString('pt-BR')}
                             />
                         ))}
                     </>
@@ -128,7 +172,9 @@ export default function ParentIndex() {
                     </TouchableOpacity>
                 </View>
                 <View style={{ alignItems: 'flex-start', width: "100%" }}>
-                    <Text style={styles.headerText}>Ola Mãe Exemplo!</Text>
+                    <Text style={styles.headerText}>
+                        Olá {userProfile ? userProfile.nome_completo : 'Responsável'}!
+                    </Text>
                 </View>
             </View>
             <ScrollView style={styles.main} showsVerticalScrollIndicator={false}>
@@ -155,7 +201,9 @@ export default function ParentIndex() {
                     <View style={styles.modalContent}>
                         <View style={styles.profileInfo}>
                             <Image source={require("../../assets/images/prof.png")} style={styles.modalPhoto} />
-                            <Text style={styles.modalName}>Mãe Exemplo</Text>
+                            <Text style={styles.modalName}>
+                                {userProfile ? userProfile.nome_completo : 'Responsável'}
+                            </Text>
                         </View>
                         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                             <Text style={styles.logoutText}>Sair</Text>
@@ -266,5 +314,11 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    loadingText: {
+        textAlign: 'center',
+        fontSize: 16,
+        color: '#666',
+        marginTop: 20,
     },
 });

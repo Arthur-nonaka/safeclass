@@ -3,18 +3,42 @@ import { ImageBackground } from "expo-image";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import apiService from "../services/api";
 
 export default function Index() {
   const router = useRouter();
   const [userType, setUserType] = useState<'teacher' | 'parent'>('teacher');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (userType === 'teacher') {
-      router.push('/teacher');
-    } else {
-      router.push('/parent');
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Erro', 'Por favor, preencha email e senha');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const apiUserType = userType === 'teacher' ? 'professor' : 'responsavel';
+      const response = await apiService.login(email, password, apiUserType);
+      
+      if (response.data.token) {
+        await apiService.saveAuthToken(response.data.token);
+        
+        if (userType === 'teacher') {
+          router.push('/teacher');
+        } else {
+          router.push('/parent');
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      Alert.alert('Erro', 'Email ou senha incorretos');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,20 +78,39 @@ export default function Index() {
             </TouchableOpacity>
           </View>
           <View style={styles.inputContainer}>
-            <TextInput style={styles.input} placeholder="Login" />
-            <TextInput style={styles.input} placeholder="Senha" secureTextEntry />
+            <TextInput 
+              style={styles.input} 
+              placeholder="Email" 
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <TextInput 
+              style={styles.input} 
+              placeholder="Senha" 
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry 
+            />
           </View>
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <TouchableOpacity 
+            style={[styles.button, loading && styles.buttonDisabled]} 
+            onPress={handleLogin}
+            disabled={loading}
+          >
             <LinearGradient
-              colors={['#4FA8FF', '#2684FE', '#1E6BDB']}
+              colors={loading ? ['#ccc', '#999', '#666'] : ['#4FA8FF', '#2684FE', '#1E6BDB']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.buttonGradient}
             >
-              <Text style={styles.buttonText}>ENTRAR</Text>
+              <Text style={styles.buttonText}>
+                {loading ? 'ENTRANDO...' : 'ENTRAR'}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
-          <Text style={styles.textPassword}> Esqueceu a senha ?</Text>
+          {/* <Text style={styles.textPassword}> Esqueceu a senha ?</Text> */}
         </View>
       </View>
     </ImageBackground>
@@ -183,6 +226,9 @@ const styles = StyleSheet.create({
     color: '#2684FE',
     fontSize: 18,
     fontWeight: "300",
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   }
 })
 

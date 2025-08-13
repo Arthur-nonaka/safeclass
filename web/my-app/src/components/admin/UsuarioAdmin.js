@@ -9,6 +9,7 @@ const UsuarioAdmin = () => {
     nome_completo: '',
     email: '',
     telefone: '',
+    senha: '',
     tipo: 'aluno',
     sala_id: ''
   });
@@ -101,7 +102,8 @@ const UsuarioAdmin = () => {
       email: '',
       telefone: '',
       tipo: 'aluno',
-      sala_id: ''
+      sala_id: '',
+      senha: ''
     });
     setIsEditing(false);
   };
@@ -142,6 +144,17 @@ const UsuarioAdmin = () => {
             id="email"
             name="email"
             value={currentUsuario.email}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="senha">Senha:</label>
+          <input
+            type="password"
+            id="senha"
+            name="senha"
+            value={currentUsuario.senha}
             onChange={handleInputChange}
           />
         </div>

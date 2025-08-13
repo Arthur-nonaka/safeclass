@@ -1,38 +1,81 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
 import ClassCard from "../../components/ClassCard";
 import SituationCard from "../../components/SituationCard";
 import StudentCard from "../../components/StudentCard";
+import apiService from "../../services/api";
+import { Aluno, Historico, Sala, Usuario } from "../../types/api";
 
 export default function TeacherIndex() {
     const [activeTab, setActiveTab] = useState<'classes' | 'students' | 'situations'>('classes');
     const [showProfileModal, setShowProfileModal] = useState(false);
+    const [userProfile, setUserProfile] = useState<Usuario | null>(null);
+    const [salas, setSalas] = useState<Sala[]>([]);
+    const [alunos, setAlunos] = useState<Aluno[]>([]);
+    const [selectedSala, setSelectedSala] = useState<Sala | null>(null);
+    const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
+    const [historico, setHistorico] = useState<Historico[]>([]);
+    const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const classesData = [
-        { className: "Sala A - Escola Etec", school: "Americana", studentCount: 30 },
-        { className: "Sala B - Escola no Liberdade", school: "Alunos: 28", studentCount: 28 },
-    ];
+    useEffect(() => {
+        loadUserProfile();
+        loadSalas();
+    }, []);
 
-    const studentsData = [
-        { name: "Marcos Leopoldo", hasAlert: true },
-        { name: "Marcia Leopoldo", hasAlert: true },
-        { name: "Marcos Leopoldo", hasAlert: true },
-        { name: "Marcos Leopoldo", hasAlert: false },
-        { name: "Marcos Leopoldo", hasAlert: true },
-        { name: "Marcos Leopoldo", hasAlert: false },
-    ];
+    const loadUserProfile = async () => {
+        try {
+            const response = await apiService.getUserProfile();
+            setUserProfile(response.data);
+        } catch (error) {
+            console.error('Error loading user profile:', error);
+        }
+    };
 
-    const situationsData = [
-        { title: "Situação 1" },
-        { title: "Situação 2" },
-        { title: "Situação 3" },
-        { title: "Situação 4" },
-    ];
+    const loadSalas = async () => {
+        try {
+            setLoading(true);
+            const response = await apiService.getSalas();
+            setSalas(response.data);
+        } catch (error) {
+            console.error('Error loading salas:', error);
+            Alert.alert('Erro', 'Erro ao carregar salas');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const handleLogout = () => {
+    const loadAlunosBySala = async (sala: Sala) => {
+        try {
+            setLoading(true);
+            const response = await apiService.getAlunosBySala(sala.id);
+            setAlunos(response.data);
+            setSelectedSala(sala);
+        } catch (error) {
+            console.error('Error loading alunos:', error);
+            Alert.alert('Erro', 'Erro ao carregar alunos');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadHistoricoByAluno = async (aluno: Aluno) => {
+        try {
+            setLoading(true);
+            const response = await apiService.getHistoricoByUsuario(aluno.id);
+            setHistorico(response.data);
+            setSelectedAluno(aluno);
+        } catch (error) {
+            console.error('Error loading historico:', error);
+            Alert.alert('Erro', 'Erro ao carregar histórico');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
         Alert.alert(
             "Sair",
             "Tem certeza que deseja sair?",
@@ -44,7 +87,8 @@ export default function TeacherIndex() {
                 {
                     text: "Sair",
                     style: "destructive",
-                    onPress: () => {
+                    onPress: async () => {
+                        await apiService.logout();
                         setShowProfileModal(false);
                         router.push('../');
                     }
@@ -54,18 +98,25 @@ export default function TeacherIndex() {
     };
 
     const renderContent = () => {
+        if (loading) {
+            return <Text style={styles.loadingText}>Carregando...</Text>;
+        }
+
         switch (activeTab) {
             case 'classes':
                 return (
                     <>
                         <Text style={styles.text}>Turmas</Text>
-                        {classesData.map((classItem, index) => (
+                        {salas.map((sala) => (
                             <ClassCard
-                                key={index}
-                                className={classItem.className}
-                                school={classItem.school}
-                                studentCount={classItem.studentCount}
-                                onPress={() => setActiveTab('students')}
+                                key={sala.id}
+                                className={sala.nome}
+                                school="Escola Etec"
+                                studentCount={0} // You can count students later
+                                onPress={() => {
+                                    loadAlunosBySala(sala);
+                                    setActiveTab('students');
+                                }}
                             />
                         ))}
                     </>
@@ -73,13 +124,18 @@ export default function TeacherIndex() {
             case 'students':
                 return (
                     <>
-                        <Text style={styles.text}>Alunos</Text>
-                        {studentsData.map((student, index) => (
+                        <Text style={styles.text}>
+                            Alunos {selectedSala ? `- ${selectedSala.nome}` : ''}
+                        </Text>
+                        {alunos.map((aluno) => (
                             <StudentCard
-                                key={index}
-                                name={student.name}
-                                hasAlert={student.hasAlert}
-                                onPress={() => setActiveTab('situations')}
+                                key={aluno.id}
+                                name={aluno.nome_completo}
+                                hasAlert={false} // You can implement alert logic later
+                                onPress={() => {
+                                    loadHistoricoByAluno(aluno);
+                                    setActiveTab('situations');
+                                }}
                             />
                         ))}
                     </>
@@ -87,11 +143,13 @@ export default function TeacherIndex() {
             case 'situations':
                 return (
                     <>
-                        <Text style={styles.text}>Marcos Leopoldo</Text>
-                        {situationsData.map((situation, index) => (
+                        <Text style={styles.text}>
+                            {selectedAluno ? selectedAluno.nome_completo : 'Histórico'}
+                        </Text>
+                        {historico.map((item) => (
                             <SituationCard
-                                key={index}
-                                title={situation.title}
+                                key={item.id}
+                                title={item.descricao}
                             />
                         ))}
                     </>
@@ -110,7 +168,7 @@ export default function TeacherIndex() {
                 </View>
                 <View style={{ alignItems: 'flex-start', width: "100%" }}>
                     <Text style={styles.headerText}>
-                        Ola Prof. Exemplo !
+                        Olá {userProfile ? userProfile.nome_completo : 'Professor'}!
                     </Text>
                 </View>
             </View>
@@ -138,7 +196,9 @@ export default function TeacherIndex() {
                     <View style={styles.modalContent}>
                         <View style={styles.profileInfo}>
                             <Image source={require("../../assets/images/prof.png")} style={styles.modalPhoto} />
-                            <Text style={styles.modalName}>Prof. Exemplo</Text>
+                            <Text style={styles.modalName}>
+                                {userProfile ? userProfile.nome_completo : 'Professor'}
+                            </Text>
                         </View>
                         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                             <Text style={styles.logoutText}>Sair</Text>
@@ -255,5 +315,11 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    loadingText: {
+        textAlign: 'center',
+        fontSize: 16,
+        color: '#666',
+        marginTop: 20,
     },
 });
