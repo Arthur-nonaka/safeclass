@@ -1,3 +1,4 @@
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { API_CONFIG } from '../config';
 import {
     Aluno,
@@ -10,90 +11,71 @@ import {
     Usuario
 } from '../types/api';
 
-const API_BASE_URL = API_CONFIG.BASE_URL;
-
-interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  headers?: Record<string, string>;
-  body?: any;
-  requireAuth?: boolean;
-}
-
 // Simple storage for demo - replace with AsyncStorage in production
 let authToken: string | null = null;
 
 class ApiService {
-  private baseUrl: string;
+  private api: AxiosInstance;
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
+  constructor() {
+    this.api = axios.create({
+      baseURL: API_CONFIG.BASE_URL,
+      timeout: API_CONFIG.TIMEOUT,
+      headers: API_CONFIG.DEFAULT_HEADERS,
+    });
+
+    // Request interceptor to add auth token
+    this.api.interceptors.request.use(
+      (config) => {
+        if (authToken) {
+          config.headers.Authorization = `Bearer ${authToken}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Response interceptor to handle errors
+    this.api.interceptors.response.use(
+      (response: AxiosResponse) => response,
+      (error) => {
+        console.error('API Error:', error);
+        
+        // Handle specific error cases
+        if (error.response) {
+          // Server responded with error status
+          console.error('Response error:', error.response.status, error.response.data);
+        } else if (error.request) {
+          // Request made but no response received
+          console.error('Network error:', error.request);
+        } else {
+          // Something else happened
+          console.error('Request setup error:', error.message);
+        }
+        
+        return Promise.reject(error);
+      }
+    );
   }
 
-  private async getAuthToken(): Promise<string | null> {
-    return authToken;
-  }
-
-  private async request<T>(
-    endpoint: string, 
-    options: RequestOptions = {}
-  ): Promise<ApiResponse<T>> {
-    const {
-      method = 'GET',
-      headers = {},
-      body,
-      requireAuth = true
-    } = options;
-
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    const defaultHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...headers
+  private formatResponse<T>(response: AxiosResponse): ApiResponse<T> {
+    return {
+      data: response.data,
+      status: response.status,
+      message: response.statusText,
     };
-
-    // Add auth token if required
-    if (requireAuth) {
-      const token = await this.getAuthToken();
-      if (token) {
-        defaultHeaders.Authorization = `Bearer ${token}`;
-      }
-    }
-
-    const config: RequestInit = {
-      method,
-      headers: defaultHeaders,
-    };
-
-    if (body && method !== 'GET') {
-      config.body = JSON.stringify(body);
-    }
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      return {
-        data,
-        status: response.status,
-      };
-    } catch (error) {
-      console.error(`API request failed for ${endpoint}:`, error);
-      throw error;
-    }
   }
 
   // Auth methods
   async login(email: string, password: string, userType: 'professor' | 'responsavel'): Promise<ApiResponse<LoginResponse>> {
-    return this.request('/auth/login', {
-      method: 'POST',
-      body: { email, password, tipo: userType },
-      requireAuth: false
+    const response = await this.api.post('/auth/login', { 
+      email, 
+      password, 
+      tipo: userType 
     });
+    return this.formatResponse(response);
   }
 
   async saveAuthToken(token: string): Promise<void> {
@@ -106,115 +88,120 @@ class ApiService {
 
   // Salas
   async getSalas(): Promise<ApiResponse<Sala[]>> {
-    return this.request('/salas');
+    const response = await this.api.get('/salas');
+    return this.formatResponse(response);
   }
 
   async getSala(id: number): Promise<ApiResponse<Sala>> {
-    return this.request(`/salas/${id}`);
+    const response = await this.api.get(`/salas/${id}`);
+    return this.formatResponse(response);
   }
 
   // Usuários
   async getUsuarios(): Promise<ApiResponse<Usuario[]>> {
-    return this.request('/usuarios');
+    const response = await this.api.get('/usuarios');
+    return this.formatResponse(response);
   }
 
   async getUsuario(id: number): Promise<ApiResponse<Usuario>> {
-    return this.request(`/usuarios/${id}`);
+    const response = await this.api.get(`/usuarios/${id}`);
+    return this.formatResponse(response);
   }
 
   async getUserProfile(): Promise<ApiResponse<Usuario>> {
-    return this.request('/usuarios/profile');
+    const response = await this.api.get('/usuarios/profile');
+    return this.formatResponse(response);
   }
 
   // Alunos
   async getAlunos(): Promise<ApiResponse<Aluno[]>> {
-    return this.request('/alunos');
+    const response = await this.api.get('/alunos');
+    return this.formatResponse(response);
   }
 
   async getAluno(id: number): Promise<ApiResponse<Aluno>> {
-    return this.request(`/alunos/${id}`);
+    const response = await this.api.get(`/alunos/${id}`);
+    return this.formatResponse(response);
   }
 
   async getAlunosBySala(salaId: number): Promise<ApiResponse<Aluno[]>> {
-    return this.request(`/alunos/sala/${salaId}`);
+    const response = await this.api.get(`/alunos/sala/${salaId}`);
+    return this.formatResponse(response);
   }
 
   // Para responsáveis - obter filhos
   async getFilhos(responsavelId: number): Promise<ApiResponse<Aluno[]>> {
-    return this.request(`/responsavel-filho/responsavel/${responsavelId}`);
+    const response = await this.api.get(`/responsavel-filho/responsavel/${responsavelId}`);
+    return this.formatResponse(response);
   }
 
   // Condições médicas
   async getCondicoesMedicas(): Promise<ApiResponse<CondicaoMedica[]>> {
-    return this.request('/condicoes-medicas');
+    const response = await this.api.get('/condicoes-medicas');
+    return this.formatResponse(response);
   }
 
   async getCondicoesByAluno(alunoId: number): Promise<ApiResponse<CondicaoMedica[]>> {
-    return this.request(`/usuario-condicao-medica/aluno/${alunoId}`);
+    const response = await this.api.get(`/usuario-condicao-medica/aluno/${alunoId}`);
+    return this.formatResponse(response);
   }
 
   // Remédios
   async getRemedios(): Promise<ApiResponse<Remedio[]>> {
-    return this.request('/remedios');
+    const response = await this.api.get('/remedios');
+    return this.formatResponse(response);
   }
 
   async getRemediosByAluno(alunoId: number): Promise<ApiResponse<Remedio[]>> {
-    return this.request(`/remedios/aluno/${alunoId}`);
+    const response = await this.api.get(`/remedios/aluno/${alunoId}`);
+    return this.formatResponse(response);
   }
 
   async createRemedio(remedio: Partial<Remedio>): Promise<ApiResponse<Remedio>> {
-    return this.request('/remedios', {
-      method: 'POST',
-      body: remedio
-    });
+    const response = await this.api.post('/remedios', remedio);
+    return this.formatResponse(response);
   }
 
   async updateRemedio(id: number, remedio: Partial<Remedio>): Promise<ApiResponse<Remedio>> {
-    return this.request(`/remedios/${id}`, {
-      method: 'PUT',
-      body: remedio
-    });
+    const response = await this.api.put(`/remedios/${id}`, remedio);
+    return this.formatResponse(response);
   }
 
   // Histórico
   async getHistorico(): Promise<ApiResponse<Historico[]>> {
-    return this.request('/historico');
+    const response = await this.api.get('/historico');
+    return this.formatResponse(response);
   }
 
   async getHistoricoByUsuario(usuarioId: number): Promise<ApiResponse<Historico[]>> {
-    return this.request(`/historico/usuario/${usuarioId}`);
+    const response = await this.api.get(`/historico/usuario/${usuarioId}`);
+    return this.formatResponse(response);
   }
 
   async createHistorico(historico: Partial<Historico>): Promise<ApiResponse<Historico>> {
-    return this.request('/historico', {
-      method: 'POST',
-      body: historico
-    });
+    const response = await this.api.post('/historico', historico);
+    return this.formatResponse(response);
   }
 
   // Emergency/Crisis reporting
   async reportCrisis(alunoId: number, description: string, severity: 'low' | 'medium' | 'high'): Promise<ApiResponse<Historico>> {
-    return this.request('/historico', {
-      method: 'POST',
-      body: {
-        usuario_id: alunoId,
-        descricao: `CRISE - ${severity.toUpperCase()}: ${description}`,
-        tipo_evento: 'crise'
-      }
+    const response = await this.api.post('/historico', {
+      usuario_id: alunoId,
+      descricao: `CRISE - ${severity.toUpperCase()}: ${description}`,
+      tipo_evento: 'crise'
     });
+    return this.formatResponse(response);
   }
 
   // Medicine administration
   async reportMedicineAdministration(remedioId: number, alunoId: number, observacoes?: string): Promise<ApiResponse<Historico>> {
-    return this.request('/historico', {
-      method: 'POST',
-      body: {
-        usuario_id: alunoId,
-        descricao: `Medicamento administrado - Remédio ID: ${remedioId}${observacoes ? ` - Obs: ${observacoes}` : ''}`,
-        tipo_evento: 'medicamento'
-      }
+    const response = await this.api.post('/historico', {
+      usuario_id: alunoId,
+      descricao: `Medicamento administrado - Remédio ID: ${remedioId}${observacoes ? ` - Obs: ${observacoes}` : ''}`,
+      tipo_evento: 'medicamento'
     });
+    return this.formatResponse(response);
   }
 }
 
-export default new ApiService(API_BASE_URL);
+export default new ApiService();
