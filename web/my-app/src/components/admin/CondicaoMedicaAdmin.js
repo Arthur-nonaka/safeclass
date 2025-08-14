@@ -21,7 +21,7 @@ const CondicaoMedicaAdmin = () => {
       const response = await condicaoMedicaService.getAll();
       setCondicoes(response.data.data);
     } catch (error) {
-      alert('Erro ao carregar condições médicas: ' + error.message);
+      console.log('Erro ao carregar condições médicas: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -30,7 +30,7 @@ const CondicaoMedicaAdmin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentCondicao.nome.trim()) {
-      alert('Nome da condição é obrigatório');
+      console.log('Nome da condição é obrigatório');
       return;
     }
 
@@ -38,16 +38,16 @@ const CondicaoMedicaAdmin = () => {
       setLoading(true);
       if (isEditing) {
         await condicaoMedicaService.update(currentCondicao.id, currentCondicao);
-        alert('Condição médica atualizada com sucesso!');
+        console.log('Condição médica atualizada com sucesso!');
       } else {
         await condicaoMedicaService.create(currentCondicao);
-        alert('Condição médica criada com sucesso!');
+        console.log('Condição médica criada com sucesso!');
       }
       
       resetForm();
       fetchCondicoes();
     } catch (error) {
-      alert('Erro ao salvar condição médica: ' + error.message);
+      console.log('Erro ao salvar condição médica: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -64,10 +64,10 @@ const CondicaoMedicaAdmin = () => {
     try {
       setLoading(true);
       await condicaoMedicaService.delete(id);
-      alert('Condição médica excluída com sucesso!');
+      console.log('Condição médica excluída com sucesso!');
       fetchCondicoes();
     } catch (error) {
-      alert('Erro ao excluir condição médica: ' + error.message);
+      console.log('Erro ao excluir condição médica: ' + error.message);
     } finally {
       setLoading(false);
     }

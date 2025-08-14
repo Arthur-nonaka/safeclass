@@ -23,7 +23,7 @@ const HistoricoAdmin = () => {
       const response = await historicoService.getAll();
       setHistoricos(response.data.data);
     } catch (error) {
-      alert('Erro ao carregar históricos: ' + error.message);
+      console.log('Erro ao carregar históricos: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -41,7 +41,7 @@ const HistoricoAdmin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentHistorico.descricao.trim() || !currentHistorico.usuario_id) {
-      alert('Usuário e descrição são obrigatórios');
+      console.log('Usuário e descrição são obrigatórios');
       return;
     }
 
@@ -49,16 +49,16 @@ const HistoricoAdmin = () => {
       setLoading(true);
       if (isEditing) {
         await historicoService.update(currentHistorico.id, currentHistorico);
-        alert('Histórico atualizado com sucesso!');
+        console.log('Histórico atualizado com sucesso!');
       } else {
         await historicoService.create(currentHistorico);
-        alert('Histórico criado com sucesso!');
+        console.log('Histórico criado com sucesso!');
       }
       
       resetForm();
       fetchHistoricos();
     } catch (error) {
-      alert('Erro ao salvar histórico: ' + error.message);
+      console.log('Erro ao salvar histórico: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -75,10 +75,10 @@ const HistoricoAdmin = () => {
     try {
       setLoading(true);
       await historicoService.delete(id);
-      alert('Histórico excluído com sucesso!');
+      console.log('Histórico excluído com sucesso!');
       fetchHistoricos();
     } catch (error) {
-      alert('Erro ao excluir histórico: ' + error.message);
+      console.log('Erro ao excluir histórico: ' + error.message);
     } finally {
       setLoading(false);
     }

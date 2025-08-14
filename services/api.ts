@@ -1,4 +1,7 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
+import * as FileSystem from 'expo-file-system';
+import { Platform } from "react-native";
 import { API_CONFIG } from "../config";
 import {
   Aluno,
@@ -106,16 +109,114 @@ class ApiService {
     return this.formatResponse(response);
   }
 
-  async getUserProfile(): Promise<ApiResponse<Usuario>> {
-    const token = authToken;
-    if (!token) {
-      throw new Error("User is not authenticated");
+  async uploadProfilePicture(id: Number, imageData: string, fileName: string): Promise<ApiResponse<Usuario>> {
+    try {
+      console.log('🔍 Processing image data...');
+      console.log('Platform:', Platform.OS);
+
+      let imageUri = imageData;
+
+      // Se for base64, tratar diferente para web e mobile
+      if (imageData.startsWith('data:image/') || imageData.startsWith('base64,')) {
+        console.log('📝 Converting base64...');
+
+        if (Platform.OS === 'web') {
+          // No web, enviar base64 diretamente
+          console.log('🌐 Web platform detected - sending base64 directly');
+          return this.uploadBase64Web(id, imageData, fileName);
+        } else {
+          // No mobile, converter para file
+          console.log('📱 Mobile platform detected - converting to file');
+
+          const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+          const fileUri = `${FileSystem.documentDirectory}temp_profile_${Date.now()}.jpg`;
+
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          console.log('✅ Base64 converted to file:', fileUri);
+          imageUri = fileUri;
+        }
+      }
+
+      console.log('📁 Final image URI:', imageUri);
+
+      const formData = new FormData();
+      formData.append('profile_picture', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: fileName || 'profile.jpg',
+      } as any);
+
+      const response = await this.api.post(`/usuarios/upload/${id}`, formData, {
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      // Limpar arquivo temporário no mobile
+      if (Platform.OS !== 'web' && imageData.startsWith('data:image/')) {
+        try {
+          await FileSystem.deleteAsync(imageUri);
+          console.log('🗑️ Temporary file deleted');
+        } catch (deleteError) {
+          console.log('⚠️ Could not delete temp file:', deleteError);
+        }
+      }
+
+      return this.formatResponse(response);
+
     }
+    catch (error) {
+      console.error("Error uploading profile picture:", error);
+      throw error;
+    }
+  }
 
-    const decodedToken = this.decodeJWTPayload(token);
+  private async uploadBase64Web(id: number, base64Data: string, fileName?: string): Promise<ApiResponse<Usuario>> {
+    try {
+      const cleanBase64 = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
 
-    const response = await this.api.get(`/usuarios/${decodedToken.id}`);
-    return this.formatResponse(response);
+      const requestData = {
+        profile_picture: cleanBase64,
+        filename: fileName || 'profile.jpg',
+        mimetype: 'image/jpeg'
+      };
+
+      const response = await this.api.post(`/usuarios/upload/${id}`, requestData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      return this.formatResponse(response);
+    } catch (error) {
+      console.error('❌ Base64 upload error:', error);
+      throw error;
+    }
+  }
+
+  async getUserProfile(): Promise<ApiResponse<Usuario>> {
+    try {
+      let token = authToken;
+      if (!token) {
+        token = await AsyncStorage.getItem('@App:token');
+      }
+
+      if (!token) {
+        throw new Error("Token is required to decode JWT payload.");
+      }
+
+      const decodedToken = this.decodeJWTPayload(token);
+
+      const response = await this.api.get(`/usuarios/${decodedToken.id}`);
+      return this.formatResponse(response);
+    } catch (error) {
+      console.error("Error getting user profile:", error);
+      throw error;
+    }
   }
 
   async getAlunos(): Promise<ApiResponse<Aluno[]>> {
@@ -133,10 +234,74 @@ class ApiService {
     return this.formatResponse(response);
   }
 
+  async getAlunosByResponsavel(responsavelId: number): Promise<ApiResponse<Aluno[]>> {
+    const response = await this.api.get(`/alunos/responsavel/${responsavelId}`);
+    return this.formatResponse(response);
+  }
+
+  async getAllAlunos(): Promise<ApiResponse<Aluno[]>> {
+    const response = await this.api.get("/alunos");
+    return this.formatResponse(response);
+  }
+
+  async createAluno(aluno: Partial<Aluno>): Promise<ApiResponse<Aluno>> {
+    const response = await this.api.post("/alunos", aluno);
+    return this.formatResponse(response);
+  }
+
+  async updateAluno(id: number, aluno: Partial<Aluno>): Promise<ApiResponse<Aluno>> {
+    const response = await this.api.put(`/alunos/${id}`, aluno);
+    return this.formatResponse(response);
+  }
+
+  async deleteAluno(id: number): Promise<ApiResponse<void>> {
+    const response = await this.api.delete(`/alunos/${id}`);
+    return this.formatResponse(response);
+  }
+
+  async getAllResponsaveis(): Promise<ApiResponse<Usuario[]>> {
+    const response = await this.api.get("/usuarios?tipo=responsavel");
+    return this.formatResponse(response);
+  }
+
   async getFilhos(responsavelId: number): Promise<ApiResponse<Aluno[]>> {
-    const response = await this.api.get(
-      `/responsavel-filho/responsavel/${responsavelId}`
-    );
+    const response = await this.api.get(`/alunos/responsavel/${responsavelId}`);
+    return this.formatResponse(response);
+  }
+
+  // Método para vincular aluno a responsável (se não estiver vinculado via responsavel_id)
+  async vincularResponsavelFilho(responsavelId: number, filhoId: number): Promise<ApiResponse<any>> {
+    const response = await this.api.post('/responsavel-filho', { 
+      responsavelId, 
+      filhoId 
+    });
+    return this.formatResponse(response);
+  }
+
+  // Método para desvincular aluno de responsável
+  async desvincularResponsavelFilho(responsavelId: number, filhoId: number): Promise<ApiResponse<any>> {
+    const response = await this.api.delete(`/responsavel-filho/${responsavelId}/${filhoId}`);
+    return this.formatResponse(response);
+  }
+
+  // Método para buscar salas do professor (se necessário)
+  async getSalasByProfessor(professorId: number): Promise<ApiResponse<Sala[]>> {
+    const response = await this.api.get(`/salas/professor/${professorId}`);
+    return this.formatResponse(response);
+  }
+
+  // Método para vincular usuário a condição médica
+  async vincularUsuarioCondicao(alunoId: number, condicaoId: number): Promise<ApiResponse<any>> {
+    const response = await this.api.post('/usuario-condicao-medica', { 
+      alunoId, 
+      condicaoId 
+    });
+    return this.formatResponse(response);
+  }
+
+  // Método para desvincular usuário de condição médica
+  async desvincularUsuarioCondicao(alunoId: number, condicaoId: number): Promise<ApiResponse<any>> {
+    const response = await this.api.delete(`/usuario-condicao-medica/${alunoId}/${condicaoId}`);
     return this.formatResponse(response);
   }
 
@@ -218,9 +383,8 @@ class ApiService {
   ): Promise<ApiResponse<Historico>> {
     const response = await this.api.post("/historico", {
       usuario_id: alunoId,
-      descricao: `Medicamento administrado - Remédio ID: ${remedioId}${
-        observacoes ? ` - Obs: ${observacoes}` : ""
-      }`,
+      descricao: `Medicamento administrado - Remédio ID: ${remedioId}${observacoes ? ` - Obs: ${observacoes}` : ""
+        }`,
       tipo_evento: "medicamento",
     });
     return this.formatResponse(response);
@@ -228,21 +392,23 @@ class ApiService {
 
   private decodeJWTPayload(token: string): any {
     try {
-      const base64Url = token.split(".")[1];
+      const cleanToken = token.replace('Bearer ', '');
 
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const parts = cleanToken.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid JWT format');
+      }
 
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split("")
-          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-          .join("")
-      );
+      const payload = parts[1];
 
-      return JSON.parse(jsonPayload);
+      const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
+
+      const decoded = atob(paddedPayload);
+
+      return JSON.parse(decoded);
     } catch (error) {
       console.error("Error decoding JWT:", error);
-      return null;
+      throw new Error("Failed to decode JWT token");
     }
   }
 }

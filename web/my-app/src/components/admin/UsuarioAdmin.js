@@ -27,7 +27,7 @@ const UsuarioAdmin = () => {
       const response = await usuarioService.getAll();
       setUsuarios(response.data.data);
     } catch (error) {
-      alert('Erro ao carregar usuários: ' + error.message);
+      console.log('Erro ao carregar usuários: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ const UsuarioAdmin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentUsuario.nome_completo.trim()) {
-      alert('Nome completo é obrigatório');
+      console.log('Nome completo é obrigatório');
       return;
     }
 
@@ -58,16 +58,16 @@ const UsuarioAdmin = () => {
 
       if (isEditing) {
         await usuarioService.update(currentUsuario.id, userData);
-        alert('Usuário atualizado com sucesso!');
+        console.log('Usuário atualizado com sucesso!');
       } else {
         await usuarioService.create(userData);
-        alert('Usuário criado com sucesso!');
+        console.log('Usuário criado com sucesso!');
       }
-      
+
       resetForm();
       fetchUsuarios();
     } catch (error) {
-      alert('Erro ao salvar usuário: ' + error.message);
+      console.log('Erro ao salvar usuário: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -87,10 +87,10 @@ const UsuarioAdmin = () => {
     try {
       setLoading(true);
       await usuarioService.delete(id);
-      alert('Usuário excluído com sucesso!');
+      console.log('Usuário excluído com sucesso!');
       fetchUsuarios();
     } catch (error) {
-      alert('Erro ao excluir usuário: ' + error.message);
+      console.log('Erro ao excluir usuário: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ const UsuarioAdmin = () => {
   return (
     <div className="admin-container">
       <h2>Gerenciar Usuários</h2>
-      
+
       <form onSubmit={handleSubmit} className="admin-form">
         <div className="form-group">
           <label htmlFor="nome_completo">Nome Completo:</label>
@@ -201,7 +201,7 @@ const UsuarioAdmin = () => {
             ))}
           </select>
         </div>
-        
+
         <div className="form-actions">
           <button type="submit" disabled={loading}>
             {loading ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Criar')}

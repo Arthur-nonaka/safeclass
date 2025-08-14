@@ -1,13 +1,36 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
+import { useEffect } from "react";
+import { AuthProvider, useAuth } from "../components/AuthContext";
+
+function RootLayoutNav() {
+  const { signed, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (signed) {
+      } else {
+        router.replace("/");
+      }
+    }
+  }, [signed, loading]);
+
+  if (loading) {
+    return null;
+  }
+
+  return (
+    <Stack>
+      <Stack.Screen name="index" options={{ title: "Login", headerShown: false }} />
+      <Stack.Screen name="(authenticated)" options={{ headerShown: false }} />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: "Login", headerShown: false}}></Stack.Screen>
-      <Stack.Screen name="parent" options={{ title: "Responsavel", headerShown: false}}></Stack.Screen>
-      <Stack.Screen name="teacher" options={{ title: "Professores", headerShown: false}}></Stack.Screen>
-    </Stack>
-  )
-    
-    
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
+  );
 }

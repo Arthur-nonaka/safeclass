@@ -5,10 +5,12 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { useAuth } from "../components/AuthContext";
 import apiService from "../services/api";
 
 export default function Index() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [userType, setUserType] = useState<'teacher' | 'parent'>('teacher');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,11 +26,10 @@ export default function Index() {
     try {
       const apiUserType = userType === 'teacher' ? 'professor' : 'responsavel';
       const response = await apiService.login(email, password, apiUserType);
-      console.log(response);
-      
+
       if (response.data.token) {
-        await apiService.saveAuthToken(response.data.token);
-        
+        await signIn(response.data.token);
+
         if (userType === 'teacher') {
           router.push('/teacher');
         } else {
@@ -61,16 +62,16 @@ export default function Index() {
         </View>
         <View style={styles.main}>
           <View style={styles.userTypeContainer}>
-            <TouchableOpacity 
-              style={[styles.userTypeButton, userType === 'teacher' && styles.activeUserType]} 
+            <TouchableOpacity
+              style={[styles.userTypeButton, userType === 'teacher' && styles.activeUserType]}
               onPress={() => setUserType('teacher')}
             >
               <Text style={[styles.userTypeText, userType === 'teacher' && styles.activeUserTypeText]}>
                 Professor
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.userTypeButton, userType === 'parent' && styles.activeUserType]} 
+            <TouchableOpacity
+              style={[styles.userTypeButton, userType === 'parent' && styles.activeUserType]}
               onPress={() => setUserType('parent')}
             >
               <Text style={[styles.userTypeText, userType === 'parent' && styles.activeUserTypeText]}>
@@ -79,24 +80,24 @@ export default function Index() {
             </TouchableOpacity>
           </View>
           <View style={styles.inputContainer}>
-            <TextInput 
-              style={styles.input} 
-              placeholder="Email" 
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            <TextInput 
-              style={styles.input} 
-              placeholder="Senha" 
+            <TextInput
+              style={styles.input}
+              placeholder="Senha"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry 
+              secureTextEntry
             />
           </View>
-          <TouchableOpacity 
-            style={[styles.button, loading && styles.buttonDisabled]} 
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
           >

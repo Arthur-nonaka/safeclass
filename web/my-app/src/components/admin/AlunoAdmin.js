@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { alunoService, salaService } from '../../services/crudService';
+import { alunoService, salaService, usuarioService } from '../../services/crudService';
 import './Admin.css';
 
 const AlunoAdmin = () => {
     const [alunos, setAlunos] = useState([]);
     const [salas, setSalas] = useState([]);
+    const [responsaveis, setResponsaveis] = useState([]); // Novo estado
     const [currentAluno, setCurrentAluno] = useState({
         nome_completo: '',
         sala_id: '',
-        alergias: ''
+        alergias: '',
+        responsavel_id: '' // Novo campo
     });
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -16,16 +18,17 @@ const AlunoAdmin = () => {
     useEffect(() => {
         fetchAlunos();
         fetchSalas();
+        fetchResponsaveis(); // Buscar responsáveis
     }, []);
 
     const fetchAlunos = async () => {
         try {
             setLoading(true);
             const response = await alunoService.getAll();
-            console.log(response.data.data);
+            console.log('Alunos:', response.data.data);
             setAlunos(response.data.data);
         } catch (error) {
-            alert('Erro ao carregar alunos: ' + error.message);
+            console.log('Erro ao carregar alunos: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -36,37 +39,47 @@ const AlunoAdmin = () => {
             const response = await salaService.getAll();
             setSalas(response.data.data);
         } catch (error) {
-            console.error('Erro ao carregar salas:', error);
+            console.log('Erro ao carregar salas: ' + error.message);
+        }
+    };
+
+
+    const fetchResponsaveis = async () => {
+        try {
+            const response = await usuarioService.getAll();
+            const responsaveisOnly = response.data.data.filter(user =>
+                user.tipo === 'responsavel' || user.tipo === 'parent'
+            );
+            setResponsaveis(responsaveisOnly);
+        } catch (error) {
+            console.error('Erro ao carregar responsáveis:', error);
+            console.log('Erro ao carregar responsáveis: ' + error.message);
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!currentAluno.nome_completo.trim()) {
-            alert('Nome completo é obrigatório');
+
+        if (!currentAluno.nome_completo || !currentAluno.sala_id || !currentAluno.responsavel_id) {
+            console.log('Preencha todos os campos obrigatórios (nome, sala e responsável)');
             return;
         }
 
         try {
             setLoading(true);
-            const alunoData = {
-                ...currentAluno,
-                sala_id: currentAluno.sala_id || null,
-                alergias: currentAluno.alergias || null
-            };
 
             if (isEditing) {
-                await alunoService.update(currentAluno.id, alunoData);
-                alert('Aluno atualizado com sucesso!');
+                await alunoService.update(currentAluno.id, currentAluno);
+                console.log('Aluno atualizado com sucesso!');
             } else {
-                await alunoService.create(alunoData);
-                alert('Aluno criado com sucesso!');
+                await alunoService.create(currentAluno);
+                console.log('Aluno criado com sucesso!');
             }
 
             resetForm();
             fetchAlunos();
         } catch (error) {
-            alert('Erro ao salvar aluno: ' + error.message);
+            console.log('Erro ao salvar aluno: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -75,24 +88,23 @@ const AlunoAdmin = () => {
     const handleEdit = (aluno) => {
         setCurrentAluno({
             ...aluno,
-            sala_id: aluno.sala_id || '',
-            alergias: aluno.alergias || ''
+            responsavel_id: aluno.responsavel_id || ''
         });
         setIsEditing(true);
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Tem certeza que deseja excluir este aluno?')) return;
-
-        try {
-            setLoading(true);
-            await alunoService.delete(id);
-            alert('Aluno excluído com sucesso!');
-            fetchAlunos();
-        } catch (error) {
-            alert('Erro ao excluir aluno: ' + error.message);
-        } finally {
-            setLoading(false);
+        if (window.confirm('Tem certeza que deseja excluir este aluno?')) {
+            try {
+                setLoading(true);
+                await alunoService.delete(id);
+                console.log('Aluno excluído com sucesso!');
+                fetchAlunos();
+            } catch (error) {
+                console.log('Erro ao excluir aluno: ' + error.message);
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -100,7 +112,8 @@ const AlunoAdmin = () => {
         setCurrentAluno({
             nome_completo: '',
             sala_id: '',
-            alergias: ''
+            alergias: '',
+            responsavel_id: ''
         });
         setIsEditing(false);
     };
@@ -112,101 +125,178 @@ const AlunoAdmin = () => {
         });
     };
 
+    // Função para obter nome do responsável
+    const getResponsavelNome = (responsavelId) => {
+        const responsavel = responsaveis.find(r => r.id === responsavelId);
+        return responsavel ? responsavel.nome_completo : 'Não definido';
+    };
+
+    // Função para obter nome da sala
     const getSalaNome = (salaId) => {
         const sala = salas.find(s => s.id === salaId);
-        return sala ? sala.nome : 'Nenhuma';
+        return sala ? sala.nome : 'Não definida';
     };
 
     return (
         <div className="admin-container">
             <h2>Gerenciar Alunos</h2>
 
+            {/* Formulário */}
             <form onSubmit={handleSubmit} className="admin-form">
-                <div className="form-group">
-                    <label htmlFor="nome_completo">Nome Completo:</label>
-                    <input
-                        type="text"
-                        id="nome_completo"
-                        name="nome_completo"
-                        value={currentAluno.nome_completo}
-                        onChange={handleInputChange}
-                        required
-                    />
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Nome Completo *</label>
+                        <input
+                            type="text"
+                            name="nome_completo"
+                            value={currentAluno.nome_completo}
+                            onChange={handleInputChange}
+                            required
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Sala *</label>
+                        <select
+                            name="sala_id"
+                            value={currentAluno.sala_id}
+                            onChange={handleInputChange}
+                            required
+                            disabled={loading}
+                        >
+                            <option value="">Selecione uma sala</option>
+                            {salas.map(sala => (
+                                <option key={sala.id} value={sala.id}>
+                                    {sala.nome}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Responsável *</label>
+                        <select
+                            name="responsavel_id"
+                            value={currentAluno.responsavel_id}
+                            onChange={handleInputChange}
+                            required
+                            disabled={loading}
+                        >
+                            <option value="">Selecione um responsável</option>
+                            {responsaveis.map(responsavel => (
+                                <option key={responsavel.id} value={responsavel.id}>
+                                    {responsavel.nome_completo} ({responsavel.email})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="alergias">Alergias:</label>
-                    <input
-                        type="text"
-                        id="alergias"
+                    <label>Alergias</label>
+                    <textarea
                         name="alergias"
-                        value={currentAluno.alergias || ''}
+                        value={currentAluno.alergias}
                         onChange={handleInputChange}
+                        placeholder="Descreva as alergias do aluno (opcional)"
+                        rows="3"
+                        disabled={loading}
                     />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="sala_id">Sala:</label>
-                    <select
-                        id="sala_id"
-                        name="sala_id"
-                        value={currentAluno.sala_id}
-                        onChange={handleInputChange}
-                    >
-                        <option value="">Nenhuma sala</option>
-                        {salas.map((sala) => (
-                            <option key={sala.id} value={sala.id}>
-                                {sala.nome}
-                            </option>
-                        ))}
-                    </select>
                 </div>
 
                 <div className="form-actions">
-                    <button type="submit" disabled={loading}>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="btn-primary"
+                    >
                         {loading ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Criar')}
                     </button>
+
                     {isEditing && (
-                        <button type="button" onClick={resetForm}>
+                        <button
+                            type="button"
+                            onClick={resetForm}
+                            disabled={loading}
+                            className="btn-secondary"
+                        >
                             Cancelar
                         </button>
                     )}
                 </div>
             </form>
 
-            <div className="admin-list">
-                <h3>Alunos Cadastrados</h3>
-                {loading && <p>Carregando...</p>}
-                {alunos.length === 0 ? (
-                    <p>Nenhum aluno cadastrado</p>
+            {/* Lista de Alunos */}
+            <div className="admin-table">
+                <h3>Lista de Alunos</h3>
+
+                {loading ? (
+                    <p>Carregando...</p>
                 ) : (
-                    <table className="admin-table">
+                    <table className='admin-table'>
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Nome</th>
-                                <th>Alergias</th>
                                 <th>Sala</th>
+                                <th>Responsável</th>
+                                <th>Alergias</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {alunos.map((aluno) => (
-                                <tr key={aluno.id}>
-                                    <td>{aluno.id}</td>
-                                    <td>{aluno.nome_completo}</td>
-                                    <td>{aluno.alergias || 'Nenhuma'}</td>
-                                    <td>{getSalaNome(aluno.sala_id)}</td>
-                                    <td>
-                                        <button onClick={() => handleEdit(aluno)} className="btn-edit">
-                                            Editar
-                                        </button>
-                                        <button onClick={() => handleDelete(aluno.id)} className="btn-delete">
-                                            Excluir
-                                        </button>
+                            {alunos.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" style={{ textAlign: 'center' }}>
+                                        Nenhum aluno encontrado
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                alunos.map(aluno => (
+                                    <tr key={aluno.id}>
+                                        <td>{aluno.nome_completo}</td>
+                                        <td>{getSalaNome(aluno.sala_id)}</td>
+                                        <td>
+                                            <span
+                                                style={{
+                                                    color: aluno.responsavel_id ? '#000' : '#ff6b6b',
+                                                    fontWeight: aluno.responsavel_id ? 'normal' : 'bold'
+                                                }}
+                                            >
+                                                {getResponsavelNome(aluno.responsavel_id)}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {aluno.alergias ? (
+                                                <span title={aluno.alergias}>
+                                                    {aluno.alergias.length > 30
+                                                        ? aluno.alergias.substring(0, 30) + '...'
+                                                        : aluno.alergias
+                                                    }
+                                                </span>
+                                            ) : (
+                                                <span style={{ color: '#999' }}>Nenhuma</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <button
+                                                onClick={() => handleEdit(aluno)}
+                                                disabled={loading}
+                                                className="btn-edit"
+                                            >
+                                                Editar
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(aluno.id)}
+                                                disabled={loading}
+                                                className="btn-delete"
+                                            >
+                                                Excluir
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 )}

@@ -26,7 +26,7 @@ const RemedioAdmin = () => {
       const response = await remedioService.getAll();
       setRemedios(response.data.data);
     } catch (error) {
-      alert('Erro ao carregar remédios: ' + error.message);
+      console.log('Erro ao carregar remédios: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,7 @@ const RemedioAdmin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentRemedio.nome.trim() || !currentRemedio.aluno_id || !currentRemedio.dosagem.trim()) {
-      alert('Nome do remédio, aluno e dosagem são obrigatórios');
+      console.log('Nome do remédio, aluno e dosagem são obrigatórios');
       return;
     }
 
@@ -52,16 +52,16 @@ const RemedioAdmin = () => {
       setLoading(true);
       if (isEditing) {
         await remedioService.update(currentRemedio.id, currentRemedio);
-        alert('Remédio atualizado com sucesso!');
+        console.log('Remédio atualizado com sucesso!');
       } else {
         await remedioService.create(currentRemedio);
-        alert('Remédio criado com sucesso!');
+        console.log('Remédio criado com sucesso!');
       }
       
       resetForm();
       fetchRemedios();
     } catch (error) {
-      alert('Erro ao salvar remédio: ' + error.message);
+      console.log('Erro ao salvar remédio: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -78,10 +78,10 @@ const RemedioAdmin = () => {
     try {
       setLoading(true);
       await remedioService.delete(id);
-      alert('Remédio excluído com sucesso!');
+      console.log('Remédio excluído com sucesso!');
       fetchRemedios();
     } catch (error) {
-      alert('Erro ao excluir remédio: ' + error.message);
+      console.log('Erro ao excluir remédio: ' + error.message);
     } finally {
       setLoading(false);
     }

@@ -18,7 +18,7 @@ const SalaAdmin = () => {
       const response = await salaService.getAll();
       setSalas(response.data.data);
     } catch (error) {
-      alert('Erro ao carregar salas: ' + error.message);
+      console.log('Erro ao carregar salas: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -27,7 +27,7 @@ const SalaAdmin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentSala.nome.trim()) {
-      alert('Nome da sala é obrigatório');
+      console.log('Nome da sala é obrigatório');
       return;
     }
 
@@ -35,16 +35,16 @@ const SalaAdmin = () => {
       setLoading(true);
       if (isEditing) {
         await salaService.update(currentSala.id, currentSala);
-        alert('Sala atualizada com sucesso!');
+        console.log('Sala atualizada com sucesso!');
       } else {
         await salaService.create(currentSala);
-        alert('Sala criada com sucesso!');
+        console.log('Sala criada com sucesso!');
       }
       
       resetForm();
       fetchSalas();
     } catch (error) {
-      alert('Erro ao salvar sala: ' + error.message);
+      console.log('Erro ao salvar sala: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -61,10 +61,10 @@ const SalaAdmin = () => {
     try {
       setLoading(true);
       await salaService.delete(id);
-      alert('Sala excluída com sucesso!');
+      console.log('Sala excluída com sucesso!');
       fetchSalas();
     } catch (error) {
-      alert('Erro ao excluir sala: ' + error.message);
+      console.log('Erro ao excluir sala: ' + error.message);
     } finally {
       setLoading(false);
     }

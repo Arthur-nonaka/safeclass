@@ -18,7 +18,9 @@ export interface Aluno {
   alergias: string;
   nome_completo: string;
   sala_id?: number;
+  responsavel_id?: number;
   sala?: Sala;
+  responsavel?: Usuario;
 }
 
 export interface CondicaoMedica {
