@@ -1,15 +1,16 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import * as ImagePicker from "react-native-image-picker";
 import BottomTabBar from "../../components/BottomTabBar";
 import ClassCard from "../../components/ClassCard";
 import SituationCard from "../../components/SituationCard";
@@ -29,6 +30,7 @@ export default function TeacherIndex() {
   const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -86,6 +88,16 @@ export default function TeacherIndex() {
     }
   };
 
+  const handleImagePick = async () => {
+    const result = await ImagePicker.launchImageLibrary({
+      mediaType: "photo",
+    });
+
+    if (result.assets && result.assets.length > 0) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
   const handleLogout = async () => {
     await apiService.logout();
     setShowProfileModal(false);
@@ -107,7 +119,7 @@ export default function TeacherIndex() {
                 key={sala.id}
                 className={sala.nome}
                 school="Escola Etec"
-                studentCount={0} 
+                studentCount={0}
                 onPress={() => {
                   loadAlunosBySala(sala);
                   setActiveTab("students");
@@ -126,7 +138,7 @@ export default function TeacherIndex() {
               <StudentCard
                 key={aluno.id}
                 name={aluno.nome_completo}
-                hasAlert={false} // You can implement alert logic later
+                hasAlert={false}
                 onPress={() => {
                   loadHistoricoByAluno(aluno);
                   setActiveTab("situations");
@@ -189,29 +201,30 @@ export default function TeacherIndex() {
         animationType="fade"
         onRequestClose={() => setShowProfileModal(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowProfileModal(false)}
+        <View
+          style={styles.modalContent}
+          onStartShouldSetResponder={() => true}
+          onResponderGrant={() => { }}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.profileInfo}>
+          <View style={styles.profileInfo}>
+            <TouchableOpacity onPress={handleImagePick}>
               <Image
                 source={require("../../assets/images/prof.png")}
                 style={styles.modalPhoto}
               />
-              <Text style={styles.modalName}>
-                {userProfile ? userProfile.nome_completo : "Professor"}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleLogout}
-            >
-              <Text style={styles.logoutText}>Sair</Text>
             </TouchableOpacity>
+            <Text style={styles.modalName}>
+              {userProfile ? userProfile.nome_completo : "Professor"}
+            </Text>
           </View>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Text style={styles.logoutText}>Sair</Text>
+          </TouchableOpacity>
+        </View>
+
       </Modal>
     </View>
   );

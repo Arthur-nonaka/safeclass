@@ -1,4 +1,3 @@
-// Types for the SafeClass application
 
 export interface Sala {
   id: number;
@@ -10,7 +9,7 @@ export interface Usuario {
   nome_completo: string;
   email?: string;
   telefone?: string;
-  tipo: 'professor' | 'aluno' | 'responsavel';
+  tipo: 'professor' | 'responsavel';
   sala_id?: number;
 }
 

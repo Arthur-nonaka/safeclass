@@ -1,13 +1,8 @@
-// Configuration file for SafeClass mobile app
-
 export const API_CONFIG = {
-  // Change this to your actual API URL
   BASE_URL: 'http://localhost:3001/api',
-  
-  // Timeout for API requests (in milliseconds)
+
   TIMEOUT: 10000,
-  
-  // Default headers
+
   DEFAULT_HEADERS: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -15,19 +10,11 @@ export const API_CONFIG = {
 };
 
 export const APP_CONFIG = {
-  // App name
-  NAME: 'SafeClass',
-  
-  // Version
-  VERSION: '1.0.0',
-  
-  // Default user profile image
+
   DEFAULT_AVATAR: require('../assets/images/prof.png'),
-  
-  // QR Code image
+
   QR_CODE_IMAGE: require('../assets/images/qr-code.png'),
-  
-  // Background image
+
   BACKGROUND_IMAGE: require('../assets/images/background.png'),
 };
 
