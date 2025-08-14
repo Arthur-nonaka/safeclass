@@ -1,17 +1,16 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { API_CONFIG } from '../config';
+import axios, { AxiosInstance, AxiosResponse } from "axios";
+import { API_CONFIG } from "../config";
 import {
-    Aluno,
-    ApiResponse,
-    CondicaoMedica,
-    Historico,
-    LoginResponse,
-    Remedio,
-    Sala,
-    Usuario
-} from '../types/api';
+  Aluno,
+  ApiResponse,
+  CondicaoMedica,
+  Historico,
+  LoginResponse,
+  Remedio,
+  Sala,
+  Usuario,
+} from "../types/api";
 
-// Simple storage for demo - replace with AsyncStorage in production
 let authToken: string | null = null;
 
 class ApiService {
@@ -24,7 +23,6 @@ class ApiService {
       headers: API_CONFIG.DEFAULT_HEADERS,
     });
 
-    // Request interceptor to add auth token
     this.api.interceptors.request.use(
       (config) => {
         if (authToken) {
@@ -37,24 +35,23 @@ class ApiService {
       }
     );
 
-    // Response interceptor to handle errors
     this.api.interceptors.response.use(
       (response: AxiosResponse) => response,
       (error) => {
-        console.error('API Error:', error);
-        
-        // Handle specific error cases
+        console.error("API Error:", error);
+
         if (error.response) {
-          // Server responded with error status
-          console.error('Response error:', error.response.status, error.response.data);
+          console.error(
+            "Response error:",
+            error.response.status,
+            error.response.data
+          );
         } else if (error.request) {
-          // Request made but no response received
-          console.error('Network error:', error.request);
+          console.error("Network error:", error.request);
         } else {
-          // Something else happened
-          console.error('Request setup error:', error.message);
+          console.error("Request setup error:", error.message);
         }
-        
+
         return Promise.reject(error);
       }
     );
@@ -68,12 +65,15 @@ class ApiService {
     };
   }
 
-  // Auth methods
-  async login(email: string, password: string, userType: 'professor' | 'responsavel'): Promise<ApiResponse<LoginResponse>> {
-    const response = await this.api.post('/auth/login', { 
-      email, 
-      password, 
-      tipo: userType 
+  async login(
+    email: string,
+    password: string,
+    userType: "professor" | "responsavel"
+  ): Promise<ApiResponse<LoginResponse>> {
+    const response = await this.api.post("/auth/login", {
+      email,
+      senha: password,
+      tipo: userType,
     });
     return this.formatResponse(response);
   }
@@ -86,9 +86,8 @@ class ApiService {
     authToken = null;
   }
 
-  // Salas
   async getSalas(): Promise<ApiResponse<Sala[]>> {
-    const response = await this.api.get('/salas');
+    const response = await this.api.get("/salas");
     return this.formatResponse(response);
   }
 
@@ -97,9 +96,8 @@ class ApiService {
     return this.formatResponse(response);
   }
 
-  // Usuários
   async getUsuarios(): Promise<ApiResponse<Usuario[]>> {
-    const response = await this.api.get('/usuarios');
+    const response = await this.api.get("/usuarios");
     return this.formatResponse(response);
   }
 
@@ -109,13 +107,19 @@ class ApiService {
   }
 
   async getUserProfile(): Promise<ApiResponse<Usuario>> {
-    const response = await this.api.get('/usuarios/profile');
+    const token = authToken;
+    if (!token) {
+      throw new Error("User is not authenticated");
+    }
+
+    const decodedToken = this.decodeJWTPayload(token);
+
+    const response = await this.api.get(`/usuarios/${decodedToken.id}`);
     return this.formatResponse(response);
   }
 
-  // Alunos
   async getAlunos(): Promise<ApiResponse<Aluno[]>> {
-    const response = await this.api.get('/alunos');
+    const response = await this.api.get("/alunos");
     return this.formatResponse(response);
   }
 
@@ -129,26 +133,29 @@ class ApiService {
     return this.formatResponse(response);
   }
 
-  // Para responsáveis - obter filhos
   async getFilhos(responsavelId: number): Promise<ApiResponse<Aluno[]>> {
-    const response = await this.api.get(`/responsavel-filho/responsavel/${responsavelId}`);
+    const response = await this.api.get(
+      `/responsavel-filho/responsavel/${responsavelId}`
+    );
     return this.formatResponse(response);
   }
 
-  // Condições médicas
   async getCondicoesMedicas(): Promise<ApiResponse<CondicaoMedica[]>> {
-    const response = await this.api.get('/condicoes-medicas');
+    const response = await this.api.get("/condicoes-medicas");
     return this.formatResponse(response);
   }
 
-  async getCondicoesByAluno(alunoId: number): Promise<ApiResponse<CondicaoMedica[]>> {
-    const response = await this.api.get(`/usuario-condicao-medica/aluno/${alunoId}`);
+  async getCondicoesByAluno(
+    alunoId: number
+  ): Promise<ApiResponse<CondicaoMedica[]>> {
+    const response = await this.api.get(
+      `/usuario-condicao-medica/aluno/${alunoId}`
+    );
     return this.formatResponse(response);
   }
 
-  // Remédios
   async getRemedios(): Promise<ApiResponse<Remedio[]>> {
-    const response = await this.api.get('/remedios');
+    const response = await this.api.get("/remedios");
     return this.formatResponse(response);
   }
 
@@ -157,50 +164,86 @@ class ApiService {
     return this.formatResponse(response);
   }
 
-  async createRemedio(remedio: Partial<Remedio>): Promise<ApiResponse<Remedio>> {
-    const response = await this.api.post('/remedios', remedio);
+  async createRemedio(
+    remedio: Partial<Remedio>
+  ): Promise<ApiResponse<Remedio>> {
+    const response = await this.api.post("/remedios", remedio);
     return this.formatResponse(response);
   }
 
-  async updateRemedio(id: number, remedio: Partial<Remedio>): Promise<ApiResponse<Remedio>> {
+  async updateRemedio(
+    id: number,
+    remedio: Partial<Remedio>
+  ): Promise<ApiResponse<Remedio>> {
     const response = await this.api.put(`/remedios/${id}`, remedio);
     return this.formatResponse(response);
   }
 
-  // Histórico
   async getHistorico(): Promise<ApiResponse<Historico[]>> {
-    const response = await this.api.get('/historico');
+    const response = await this.api.get("/historico");
     return this.formatResponse(response);
   }
 
-  async getHistoricoByUsuario(usuarioId: number): Promise<ApiResponse<Historico[]>> {
+  async getHistoricoByUsuario(
+    usuarioId: number
+  ): Promise<ApiResponse<Historico[]>> {
     const response = await this.api.get(`/historico/usuario/${usuarioId}`);
     return this.formatResponse(response);
   }
 
-  async createHistorico(historico: Partial<Historico>): Promise<ApiResponse<Historico>> {
-    const response = await this.api.post('/historico', historico);
+  async createHistorico(
+    historico: Partial<Historico>
+  ): Promise<ApiResponse<Historico>> {
+    const response = await this.api.post("/historico", historico);
     return this.formatResponse(response);
   }
 
-  // Emergency/Crisis reporting
-  async reportCrisis(alunoId: number, description: string, severity: 'low' | 'medium' | 'high'): Promise<ApiResponse<Historico>> {
-    const response = await this.api.post('/historico', {
+  async reportCrisis(
+    alunoId: number,
+    description: string,
+    severity: "low" | "medium" | "high"
+  ): Promise<ApiResponse<Historico>> {
+    const response = await this.api.post("/historico", {
       usuario_id: alunoId,
       descricao: `CRISE - ${severity.toUpperCase()}: ${description}`,
-      tipo_evento: 'crise'
+      tipo_evento: "crise",
     });
     return this.formatResponse(response);
   }
 
-  // Medicine administration
-  async reportMedicineAdministration(remedioId: number, alunoId: number, observacoes?: string): Promise<ApiResponse<Historico>> {
-    const response = await this.api.post('/historico', {
+  async reportMedicineAdministration(
+    remedioId: number,
+    alunoId: number,
+    observacoes?: string
+  ): Promise<ApiResponse<Historico>> {
+    const response = await this.api.post("/historico", {
       usuario_id: alunoId,
-      descricao: `Medicamento administrado - Remédio ID: ${remedioId}${observacoes ? ` - Obs: ${observacoes}` : ''}`,
-      tipo_evento: 'medicamento'
+      descricao: `Medicamento administrado - Remédio ID: ${remedioId}${
+        observacoes ? ` - Obs: ${observacoes}` : ""
+      }`,
+      tipo_evento: "medicamento",
     });
     return this.formatResponse(response);
+  }
+
+  private decodeJWTPayload(token: string): any {
+    try {
+      const base64Url = token.split(".")[1];
+
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error("Error decoding JWT:", error);
+      return null;
+    }
   }
 }
 

@@ -24,6 +24,7 @@ export default function Index() {
     try {
       const apiUserType = userType === 'teacher' ? 'professor' : 'responsavel';
       const response = await apiService.login(email, password, apiUserType);
+      console.log(response);
       
       if (response.data.token) {
         await apiService.saveAuthToken(response.data.token);

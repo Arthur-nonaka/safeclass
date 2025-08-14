@@ -16,6 +16,7 @@ export interface Usuario {
 
 export interface Aluno {
   id: number;
+  alergias: string;
   nome_completo: string;
   sala_id?: number;
   sala?: Sala;

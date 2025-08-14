@@ -21,7 +21,7 @@ export default function ClassCard({ className, school, studentCount, onPress }: 
         <View style={styles.cardContent}>
           <Text style={styles.className}>{className}</Text>
           <Text style={styles.school}>{school}</Text>
-          <Text style={styles.studentCount}>{studentCount} alunos</Text>
+          {/* <Text style={styles.studentCount}>{studentCount} alunos</Text> */}
         </View>
       </LinearGradient>
     </TouchableOpacity>
