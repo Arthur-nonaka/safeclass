@@ -14,22 +14,25 @@ import {
 } from "react-native";
 import BottomTabBar from "../../../components/BottomTabBar";
 import ClassCard from "../../../components/ClassCard";
-import SituationCard from "../../../components/SituationCard";
+import CondicaoMedicaCard from "../../../components/CondicaoMedicaCard";
 import StudentCard from "../../../components/StudentCard";
 import apiService from "../../../services/api";
-import { Aluno, Historico, Sala, Usuario } from "../../../types/api";
+import { Aluno, AlunoCondicaoMedica, Remedio, Sala, Usuario } from "../../../types/api";
 
 export default function TeacherIndex() {
   const [activeTab, setActiveTab] = useState<
-    "classes" | "students" | "situations"
+    "classes" | "students" | "medical-conditions"
   >("classes");
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showConditionModal, setShowConditionModal] = useState(false);
+  const [selectedCondition, setSelectedCondition] = useState<AlunoCondicaoMedica | null>(null);
   const [userProfile, setUserProfile] = useState<Usuario | null>(null);
   const [salas, setSalas] = useState<Sala[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [selectedSala, setSelectedSala] = useState<Sala | null>(null);
   const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
-  const [historico, setHistorico] = useState<Historico[]>([]);
+  const [condicoesMedicas, setCondicoesMedicas] = useState<AlunoCondicaoMedica[]>([]);
+  const [remedios, setRemedios] = useState<Remedio[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const router = useRouter();
@@ -43,10 +46,14 @@ export default function TeacherIndex() {
   const loadUserProfile = async () => {
     try {
       const response = await apiService.getUserProfile();
-      if (response.data?.data) {
-        console.log(response.data.data)
-        setUserProfile(response.data.data);
+      let userData: Usuario;
+      if (response.data && (response.data as any).data) {
+        userData = (response.data as any).data;
+      } else {
+        userData = response.data;
       }
+      console.log(userData)
+      setUserProfile(userData);
     } catch (error) {
       console.error("Error loading user profile:", error);
       Alert.alert("Erro", "Erro ao carregar perfil do usuário");
@@ -57,13 +64,17 @@ export default function TeacherIndex() {
     try {
       setLoading(true);
       const response = await apiService.getSalas();
-      if (response.data?.data) {
-        setSalas(response.data.data);
+      let salasData: Sala[];
+      if (response.data && (response.data as any).data) {
+        salasData = (response.data as any).data;
+      } else {
+        salasData = response.data;
       }
+      setSalas(salasData);
     } catch (error) {
       console.error("Error loading salas:", error);
       Alert.alert("Erro", "Erro ao carregar salas");
-      if (error.response?.status === 401) {
+      if ((error as any).response?.status === 401) {
         await signOut();
         router.replace("/");
       }
@@ -76,14 +87,18 @@ export default function TeacherIndex() {
     try {
       setLoading(true);
       const response = await apiService.getAlunosBySala(sala.id);
-      if (response.data?.data) {
-        setAlunos(response.data.data);
-        setSelectedSala(sala);
+      let alunosData: Aluno[];
+      if (response.data && (response.data as any).data) {
+        alunosData = (response.data as any).data;
+      } else {
+        alunosData = response.data;
       }
+      setAlunos(alunosData);
+      setSelectedSala(sala);
     } catch (error) {
       console.error("Error loading alunos:", error);
       Alert.alert("Erro", "Erro ao carregar alunos");
-      if (error.response?.status === 401) {
+      if ((error as any).response?.status === 401) {
         await signOut();
         router.replace("/");
       }
@@ -92,23 +107,46 @@ export default function TeacherIndex() {
     }
   };
 
-  const loadHistoricoByAluno = async (aluno: Aluno) => {
+  const loadCondicoesMedicasByAluno = async (aluno: Aluno) => {
     try {
       setLoading(true);
-      const response = await apiService.getHistoricoByUsuario(aluno.id);
-      if (response.data?.data) {
-        setHistorico(response.data.data);
-        setSelectedAluno(aluno);
+      const response = await apiService.getCondicoesMedicasByAluno(aluno.id);
+      let condicoesData: AlunoCondicaoMedica[];
+      if (response.data && (response.data as any).data) {
+        condicoesData = (response.data as any).data;
+      } else {
+        condicoesData = response.data;
       }
+      setCondicoesMedicas(condicoesData);
+      setSelectedAluno(aluno);
+      
+      // Carregar medicamentos do aluno
+      await loadRemediosByAluno(aluno.id);
     } catch (error) {
-      console.error("Error loading historico:", error);
-      Alert.alert("Erro", "Erro ao carregar histórico");
-      if (error.response?.status === 401) {
+      console.error("Error loading condições médicas:", error);
+      Alert.alert("Erro", "Erro ao carregar condições médicas");
+      if ((error as any).response?.status === 401) {
         await signOut();
         router.replace("/");
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRemediosByAluno = async (alunoId: number) => {
+    try {
+      const response = await apiService.getRemediosByAluno(alunoId);
+      let remediosData: Remedio[];
+      if (response.data && (response.data as any).data) {
+        remediosData = (response.data as any).data;
+      } else {
+        remediosData = response.data;
+      }
+      setRemedios(remediosData);
+    } catch (error) {
+      console.error("Error loading remedios:", error);
+      // Não mostrar erro para medicamentos, pois é opcional
     }
   };
 
@@ -127,8 +165,8 @@ export default function TeacherIndex() {
       }
 
       const response = await apiService.uploadProfilePicture(
-        userProfile.id,
-        result.assets[0].uri,
+        userProfile?.id || 0,
+        result.assets?.[0]?.uri || '',
         'profile.jpg'
       );
 
@@ -157,14 +195,60 @@ export default function TeacherIndex() {
   };
 
   const handleBackNavigation = () => {
-    if (activeTab === "situations") {
+    if (activeTab === "medical-conditions") {
       setActiveTab("students");
       setSelectedAluno(null);
-      setHistorico([]);
+      setCondicoesMedicas([]);
+      setRemedios([]);
     } else if (activeTab === "students") {
       setActiveTab("classes");
       setSelectedSala(null);
       setAlunos([]);
+    }
+  };
+
+  const handleConditionPress = (condicao: AlunoCondicaoMedica) => {
+    setSelectedCondition(condicao);
+    setShowConditionModal(true);
+  };
+
+  const handleEmergencia = async () => {
+    if (!selectedCondition || !selectedAluno) {
+      Alert.alert("Erro", "Dados não encontrados");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const historicoData = {
+        usuario_id: selectedAluno.id,
+        descricao: `EMERGÊNCIA - ${selectedCondition.condicao_nome}\n` +
+                  `Aluno: ${selectedAluno.nome_completo}\n` +
+                  `Professor responsável: ${userProfile?.nome_completo || 'Professor'}\n` +
+                  `Data/Hora: ${new Date().toLocaleString('pt-BR')}\n` +
+                  `Protocolo de emergência ativado conforme condição médica registrada.`,
+        condicao_id: selectedCondition.condicao_id
+      };
+
+      await apiService.createHistorico(historicoData);
+      
+      Alert.alert(
+        "Emergência Registrada", 
+        "O protocolo de emergência foi ativado e registrado no histórico do aluno.",
+        [
+          {
+            text: "OK",
+            onPress: () => setShowConditionModal(false)
+          }
+        ]
+      );
+      
+    } catch (error) {
+      console.error("Error creating emergency record:", error);
+      Alert.alert("Erro", "Falha ao registrar emergência. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -216,15 +300,15 @@ export default function TeacherIndex() {
                   name={aluno.nome_completo}
                   hasAlert={false}
                   onPress={() => {
-                    loadHistoricoByAluno(aluno);
-                    setActiveTab("situations");
+                    loadCondicoesMedicasByAluno(aluno);
+                    setActiveTab("medical-conditions");
                   }}
                 />
               ))
             )}
           </>
         );
-      case "situations":
+      case "medical-conditions":
         return (
           <>
             <View style={styles.headerWithBack}>
@@ -232,16 +316,47 @@ export default function TeacherIndex() {
                 <Text style={styles.backText}>← Voltar</Text>
               </TouchableOpacity>
               <Text style={styles.text}>
-                {selectedAluno ? selectedAluno.nome_completo : "Histórico"}
+                Condições Médicas - {selectedAluno ? selectedAluno.nome_completo : ""}
               </Text>
             </View>
-            {historico.length === 0 ? (
-              <Text style={styles.emptyText}>Nenhum histórico encontrado</Text>
-            ) : (
-              historico.map((item) => (
-                <SituationCard key={item.id} title={item.descricao} />
-              ))
-            )}
+            
+            {/* Seção de Condições Médicas */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Condições Médicas</Text>
+              {condicoesMedicas.length === 0 ? (
+                <Text style={styles.emptyText}>Nenhuma condição médica encontrada</Text>
+              ) : (
+                condicoesMedicas.map((condicao) => (
+                  <CondicaoMedicaCard
+                    key={condicao.condicao_id}
+                    nome={condicao.condicao_nome}
+                    hasAlert={true}
+                    onPress={() => handleConditionPress(condicao)}
+                  />
+                ))
+              )}
+            </View>
+
+            {/* Seção de Medicamentos */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Medicamentos</Text>
+              {remedios.length === 0 ? (
+                <Text style={styles.emptyText}>Nenhum medicamento registrado</Text>
+              ) : (
+                remedios.map((remedio) => (
+                  <View key={remedio.id} style={styles.medicationCard}>
+                    <Text style={styles.medicationName}>{remedio.nome}</Text>
+                    <Text style={styles.medicationDosage}>Dosagem: {remedio.dosagem}</Text>
+                    {remedio.horario && (
+                      <Text style={styles.medicationTime}>Horário: {remedio.horario}</Text>
+                    )}
+                    {remedio.descricao && (
+                      <Text style={styles.medicationDescription}>Obs: {remedio.descricao}</Text>
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
           </>
         );
       default:
@@ -319,6 +434,63 @@ export default function TeacherIndex() {
             >
               <Text style={styles.logoutText}>Sair</Text>
             </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal
+        visible={showConditionModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowConditionModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowConditionModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.conditionModalContent}
+            activeOpacity={1}
+            onPress={() => { }}
+          >
+            <View style={styles.conditionModalHeader}>
+              <Text style={styles.conditionModalTitle}>
+                {selectedCondition?.condicao_nome}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setShowConditionModal(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.conditionModalBody}>
+              <Text style={styles.protocolLabel}>Protocolo de Emergência:</Text>
+              <Text style={styles.protocolText}>
+                {selectedCondition?.condicao_descricao || 'Nenhuma descrição disponível'}
+              </Text>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.emergencyButton}
+                onPress={handleEmergencia}
+                disabled={loading}
+              >
+                <Text style={styles.emergencyButtonText}>
+                  {loading ? "Registrando..." : "🚨 EMERGÊNCIA"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.okButton}
+                onPress={() => setShowConditionModal(false)}
+              >
+                <Text style={styles.okButtonText}>Entendi</Text>
+              </TouchableOpacity>
+            </View>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -477,5 +649,130 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginTop: 20,
+  },
+  // Estilos do modal de condição médica
+  conditionModalContent: {
+    backgroundColor: "#FFF",
+    borderRadius: 20,
+    margin: 20,
+    maxHeight: "80%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 15,
+  },
+  conditionModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  conditionModalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#FF6B6B",
+    flex: 1,
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: "#666",
+    fontWeight: "300",
+  },
+  conditionModalBody: {
+    padding: 20,
+  },
+  protocolLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 10,
+  },
+  protocolText: {
+    fontSize: 15,
+    color: "#555",
+    lineHeight: 22,
+    textAlign: "justify",
+  },
+  modalButtons: {
+    padding: 20,
+    gap: 12,
+  },
+  emergencyButton: {
+    backgroundColor: "#FF4444",
+    paddingVertical: 15,
+    borderRadius: 25,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  emergencyButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  okButton: {
+    backgroundColor: "#2684FE",
+    paddingVertical: 15,
+    borderRadius: 25,
+    alignItems: "center",
+  },
+  okButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  // Estilos para seções e medicamentos
+  section: {
+    marginBottom: 25,
+    paddingHorizontal: 5,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
+    paddingLeft: 5,
+  },
+  medicationCard: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  medicationName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2684FE",
+    marginBottom: 5,
+  },
+  medicationDosage: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 3,
+  },
+  medicationTime: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 3,
+  },
+  medicationDescription: {
+    fontSize: 14,
+    color: "#666",
+    fontStyle: "italic",
   },
 });

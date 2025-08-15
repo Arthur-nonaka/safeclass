@@ -19,7 +19,7 @@ export interface Aluno {
   nome_completo: string;
   sala_id?: number;
   responsavel_id?: number;
-  sala?: Sala;
+  sala_nome?: string;
   responsavel?: Usuario;
 }
 
@@ -27,6 +27,14 @@ export interface CondicaoMedica {
   id: number;
   nome: string;
   descricao?: string;
+}
+
+export interface AlunoCondicaoMedica {
+  aluno_id: number;
+  condicao_id: number;
+  aluno_nome: string;
+  condicao_nome: string;
+  condicao_descricao: string;
 }
 
 export interface Remedio {
@@ -43,6 +51,7 @@ export interface Historico {
   id: number;
   usuario_id: number;
   descricao: string;
+  condicao_id?: number;
   criado_em: string;
   usuario?: Usuario;
 }

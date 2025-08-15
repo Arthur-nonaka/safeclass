@@ -3,17 +3,19 @@ import './AdminDashboard.css';
 import AlunoAdmin from './AlunoAdmin';
 import CondicaoMedicaAdmin from './CondicaoMedicaAdmin';
 import HistoricoAdmin from './HistoricoAdmin';
+import RelacionamentoAdmin from './RelacionamentoAdmin';
 import RemedioAdmin from './RemedioAdmin';
 import SalaAdmin from './SalaAdmin';
 import UsuarioAdmin from './UsuarioAdmin';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('salas');
+  const [activeTab, setActiveTab] = useState('relacionamentos');
 
   const tabs = [
     { id: 'salas', label: 'Salas', component: SalaAdmin },
     { id: 'usuarios', label: 'Usuários', component: UsuarioAdmin },
     { id: 'alunos', label: 'Alunos', component: AlunoAdmin },
+    { id: 'relacionamentos', label: 'Relacionamentos Aluno-Condição', component: RelacionamentoAdmin },
     { id: 'condicoes', label: 'Condições Médicas', component: CondicaoMedicaAdmin },
     { id: 'remedios', label: 'Remédios', component: RemedioAdmin },
     { id: 'historico', label: 'Histórico', component: HistoricoAdmin },

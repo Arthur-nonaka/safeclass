@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { condicaoMedicaService } from '../../services/crudService';
+import { condicaoMedicaService } from '../../services/relacionamentoService';
 import './Admin.css';
 
 const CondicaoMedicaAdmin = () => {

@@ -2,8 +2,8 @@ import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface BottomTabBarProps {
-    activeTab: 'classes' | 'students' | 'situations';
-    onTabPress: (tab: 'classes' | 'students' | 'situations') => void;
+    activeTab: 'classes' | 'students' | 'medical-conditions';
+    onTabPress: (tab: 'classes' | 'students' | 'medical-conditions') => void;
 }
 
 export default function BottomTabBar({ activeTab, onTabPress }: BottomTabBarProps) {
@@ -36,14 +36,14 @@ export default function BottomTabBar({ activeTab, onTabPress }: BottomTabBarProp
             </TouchableOpacity>
 
             <TouchableOpacity
-                style={[styles.tab, activeTab === 'situations' && styles.activeTab]}
-                onPress={() => onTabPress('situations')}
+                style={[styles.tab, activeTab === 'medical-conditions' && styles.activeTab]}
+                onPress={() => onTabPress('medical-conditions')}
             >
                 <Image
                     source={require('../assets/images/file.png')}
                     style={[
                         styles.icon,
-                        { tintColor: activeTab === 'situations' ? '#FFF' : '#666' }
+                        { tintColor: activeTab === 'medical-conditions' ? '#FFF' : '#666' }
                     ]}
                 />
             </TouchableOpacity>

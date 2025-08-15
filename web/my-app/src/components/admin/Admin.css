@@ -48,16 +48,496 @@
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 16px;
-  transition: border-color 0.3s ease;
-  box-sizing: border-box;
+  transition: border-color 0.2s ease;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #80bdff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* Estilos básicos para botões */
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Botão submit/primary */
+button[type="submit"],
+.btn-primary {
+  background: #28a745;
+  color: white;
+  border: 2px solid #28a745;
+}
+
+button[type="submit"]:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  background: #218838;
+  border-color: #218838;
+}
+
+/* Botão secundário */
+button[type="button"],
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: 2px solid #6c757d;
+}
+
+button[type="button"]:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled) {
+  background: #5a6268;
+  border-color: #5a6268;
+}
+
+/* Botão de delete */
+.btn-delete {
+  background: #dc3545;
+  color: white;
+  border: 2px solid #dc3545;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background: #c82333;
+  border-color: #c82333;
+}
+
+/* Botão de edit */
+.btn-edit {
+  background: #28a745;
+  color: white;
+  border: 2px solid #28a745;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.btn-edit:hover:not(:disabled) {
+  background: #218838;
+  border-color: #218838;
+}
+
+/* Estilos específicos para RelacionamentoAdmin */
+.form-section {
+  margin-bottom: 30px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 20px;
+  align-items: end;
+}
+
+/* Layout em Cards para Alunos */
+.alunos-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.aluno-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.aluno-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+
+.aluno-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.aluno-card-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2em;
+  font-weight: 600;
+}
+
+.condicoes-count {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.condicoes-list-card {
+  margin-bottom: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.condicao-item-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.condicao-item-card:hover {
+  background: #e9ecef;
+}
+
+.condicao-item-card:last-child {
+  margin-bottom: 0;
+}
+
+.condicao-info-card {
+  flex: 1;
+  margin-right: 12px;
+}
+
+.condicao-nome {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.95em;
+  margin-bottom: 4px;
+}
+
+.condicao-preview {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+
+.btn-remove-small {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-remove-small:hover {
+  background: #c82333;
+  transform: scale(1.1);
+}
+
+.btn-remove-small:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.aluno-card-footer {
+  border-top: 1px solid #f1f3f4;
+  padding-top: 12px;
+  margin-top: 16px;
+}
+
+.btn-view-details {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+  transition: background-color 0.2s ease;
+}
+
+.btn-view-details:hover {
+  background: #138496;
+}
+
+.btn-view-details:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #6c757d;
+}
+
+.empty-state p:first-child {
+  font-size: 1.1em;
+  margin-bottom: 8px;
+  color: #495057;
+}
+
+.empty-state p:last-child {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-close:hover {
+  color: #495057;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.aluno-info {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.aluno-info p {
+  margin: 8px 0;
+}
+
+.condicoes-detalhes {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.condicao-detalhe {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.condicao-detalhe h5 {
+  margin: 0 0 10px 0;
+  color: #495057;
+}
+
+.condicao-detalhe p {
+  margin: 0 0 15px 0;
+  color: #6c757d;
+  line-height: 1.5;
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #f5c6cb;
+  margin-bottom: 20px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .alunos-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .aluno-card {
+    padding: 16px;
+  }
+  
+  .aluno-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .condicoes-count {
+    align-self: flex-start;
+  }
+  
+  .condicao-item-card {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .condicao-info-card {
+    margin-right: 0;
+  }
+  
+  .btn-remove-small {
+    align-self: flex-end;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+}
+
+/* Estilos específicos para CondicaoMedicaAdmin */
+.search-section {
+  background: #f1f3f4;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.condicoes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+.condicao-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.condicao-card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.condicao-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.condicao-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2em;
+  flex: 1;
+}
+
+.condicao-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.condicao-description p {
+  margin: 0;
+  color: #6c757d;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .condicoes-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .condicao-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .condicao-actions {
+    align-self: stretch;
+  }
+  
+  .condicao-actions button {
+    flex: 1;
+  }
 }
 
 .form-group textarea {

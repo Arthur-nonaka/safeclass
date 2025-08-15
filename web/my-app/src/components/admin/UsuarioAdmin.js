@@ -239,7 +239,7 @@ const UsuarioAdmin = () => {
                   <td>{usuario.nome_completo}</td>
                   <td>{usuario.email || 'N/A'}</td>
                   <td>{usuario.telefone || 'N/A'}</td>
-                  <td className={`tipo-${usuario.tipo}`}>{usuario.tipo}</td>
+                  <td>{usuario.tipo}</td>
                   <td>{getSalaNome(usuario.sala_id)}</td>
                   <td>
                     <button onClick={() => handleEdit(usuario)} className="btn-edit">
